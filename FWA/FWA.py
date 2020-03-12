@@ -56,6 +56,7 @@ OUTER_EYES_AND_NOSE = [36, 45, 33]
 
 def FWA(image,blur_kernel,std):
     detector = dlib.get_frontal_face_detector()
+    # https://github.com/danmohaha/DSP-FWA/tree/master/dlib_model 
     lmark_predictor = dlib.shape_predictor('./shape_predictor_68_face_landmarks.dat')
     faces = detector(image)
     landmarks = lmark_predictor(image,faces[0])
