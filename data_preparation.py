@@ -11,7 +11,7 @@ from PIL import Image
 from facenet_pytorch import MTCNN
 import csv
 import matplotlib.pyplot as plt
-from tqdm.notebook import tqdm
+#from tqdm.notebook import tqdm
 
 import torch
 
@@ -21,7 +21,7 @@ n_independent_frames = 5
 face_shape = (244, 244, 3)
 
 homedir = dirname(dirname(abspath(__file__)))
-train_dir = homedir + '/data/train_parts_05/'
+train_dir = homedir + '/training_data/'
 output_dir = homedir + '/output/'
 output_individual = output_dir + "individual_frames/"
 output_stacked = output_dir + "stacked_frames/"
@@ -38,6 +38,8 @@ for subdir, dirs, files in os.walk(train_dir):
 if len(json_files) == 0:
     print("No json files", file=sys.stderr)
     exit()
+
+print("creating datatable")
 
 data = pd. DataFrame()
 for file in json_files:
@@ -61,7 +63,9 @@ audio_fakes_data.index = range(audio_fakes_data.shape[0])
 
 init_data_size = data.shape[0]
 
-data = data[~data['index'].isin(audio_fakes_data['train_mp4'])][:10]
+data = data[~data['index'].isin(audio_fakes_data['train_mp4'])]
+
+print("creating data lists")
 
 for index, row in data.iterrows():
     if not (row['label'] == 'FAKE' or row['label'] == 'REAL') or len(row['index']) == 0:
@@ -74,7 +78,7 @@ for index, row in data.iterrows():
     table_to_save.append([row['folder'], row['index']])
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-detector = MTCNN(margin=100, image_size=244, keep_all=True, thresholds=[0.7, 0.95, 0.85], post_process=False, device=device)
+detector = MTCNN(image_size=244, margin=100, keep_all=True, thresholds=[0.7, 0.95, 0.85], post_process=False, device=device)
 
 if not(os.path.exists(output_individual)):
     os.makedirs(output_individual)
@@ -141,13 +145,12 @@ for i, (video, label) in enumerate(zip(train_video_files, train_labels)):
     v_cap.release()
 
     if one_faced_video and len(stacked_faces) == n_stack_frames:
-        stacked_faces = np.array(stacked_faces)
+        stacked_faces = np.stack(stacked_faces, axis=3).reshape(face_shape[0], face_shape[1], -1)
         np.save(output_stacked + video_name, stacked_faces)
-        #stacked_frames_dict[video_name] = label
         stacked_frames_df = stacked_frames_df.append(
             [{'index':video_name,'fake':label,'num_empty_frames':num_empty_stacked_faces}], ignore_index=True)
 
-    if (i + 1) % 5 == 0:
+    if (i + 1) % 50 == 0:
         currtime = time.time()
         time_dif = currtime - starttime
 
@@ -156,11 +159,6 @@ for i, (video, label) in enumerate(zip(train_video_files, train_labels)):
 with open(output_individual + 'datatable.csv', 'w+') as f:
     w = csv.writer(f)
     w.writerows(individual_frames_dict.items())
-'''
-with open(output_stacked + 'datatable.csv', 'w+') as f:
-    w = csv.writer(f)
-    w.writerows(stacked_frames_dict.items())
-'''
 
 stacked_frames_df.to_csv(output_stacked + 'dataframe.csv')
 
