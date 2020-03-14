@@ -26,7 +26,6 @@ def faceAlign(image):
     rects = detector(gray,2) # may be potentially replaced with MTCNN
     aligned = [] # array of aligned faces 
     for rect in rects:
-        (x,y,w,h) = rect_to_bb(rect)
         face_aligned = fa.align(image,gray,rect)
         aligned.append(face_aligned)
     return aligned
