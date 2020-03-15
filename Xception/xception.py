@@ -155,7 +155,7 @@ class XceptionModel:
         # or we can use Flatten() instead.
         x = GlobalAveragePooling2D()(x)
         # outputs probability that the video will be FAKE
-        x = Dense(1,activation='sigmoid')(x)
+        x = Dense(1,activation='linear')(x)
 
         if DEBUG:
             print(x.shape)
