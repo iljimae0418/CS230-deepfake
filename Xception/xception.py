@@ -155,6 +155,11 @@ class XceptionModel:
         # or we can use Flatten() instead.
         x = GlobalAveragePooling2D()(x)
         # outputs probability that the video will be FAKE
+
+        x = Dense(2048, activation="relu")(x)
+        x = Dense(1024, activation="relu")(x)
+        x = Dense(500, activation ="relu")(x)
+        x = Dense(1,activation='sigmoid')(x)
         x = Dense(1,activation='linear')(x)
 
         if DEBUG:
@@ -190,3 +195,4 @@ epochs = 1000 # hyperparameter
 ''' the lines below can be used for trainig if train and test data is prepared '''
 # history = xception.fit(X_train,Y_train,epochs=epochs,batch_size=batch_size,validation_data=(X_val,Y_val))
 # predicted = xception.predict(X_test)
+
