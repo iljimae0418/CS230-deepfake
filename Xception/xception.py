@@ -159,7 +159,7 @@ class XceptionModel:
         x = Dense(2048, activation="relu")(x)
         x = Dense(1024, activation="relu")(x)
         x = Dense(500, activation ="relu")(x)
-        x = Dense(1,activation='sigmoid')(x)
+ #       x = Dense(1,activation='sigmoid')(x)
         x = Dense(1,activation='linear')(x)
 
         if DEBUG:
