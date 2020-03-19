@@ -55,7 +55,8 @@ INNER_EYES_AND_BOTTOM_LIP = [39, 42, 57]
 OUTER_EYES_AND_NOSE = [36, 45, 33]
 
 def FWA(image,blur_kernel,std):
-    detector = dlib.get_frontal_face_detector()
+    # detector = dlib.get_frontal_face_detector()
+    detector = dlib.cnn_face_detection_model_v1('./mmod_human_face_detector.dat') # using a CNN detector instead 
     # https://github.com/danmohaha/DSP-FWA/tree/master/dlib_model 
     lmark_predictor = dlib.shape_predictor('./shape_predictor_68_face_landmarks.dat')
     faces = detector(image)
