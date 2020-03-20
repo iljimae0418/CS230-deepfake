@@ -55,6 +55,8 @@ class XceptionModel:
         self.exit_filterSize2 = dict["exit_filterSize2"]
         self.exit_filterStride2 = dict["exit_filterStride2"]
 
+        self.fully_connected_flow_layers = dict["fully_connected_flow_layers"]
+
     ''' the entry flow similar to that described in the architecture diagram '''
     def entry_flow(self,inputs,DEBUG=True):
         # entry convolutional layers
@@ -156,21 +158,33 @@ class XceptionModel:
         x = GlobalAveragePooling2D()(x)
         # outputs probability that the video will be FAKE
 
-        x = Dense(2048, activation="relu")(x)
-        x = Dense(1024, activation="relu")(x)
-        x = Dense(500, activation ="relu")(x)
- #       x = Dense(1,activation='sigmoid')(x)
-        x = Dense(1,activation='linear')(x)
+
+    def fully_connected_res_flow(self, x):
+        tempnodes = x.get_shape().as_list()
+        temp = Dense(tempnodes[1])(x)
+        temp = Activation(activation="selu")(temp)
+        temp = BatchNormalization()(temp)
+        temp2 = Add()([x, temp])
+        return temp2
+
+    def fully_connected_flow(self,x,DEBUG=True):
+
+        previous_exit_flow = x
+        for _ in range(self.fully_connected_flow_layers):
+            previous_exit_flow = self.fully_connected_flow(previous_exit_flow,DEBUG=True)
+
+        previous_exit_flow = Dense(1,activation='linear')(previous_exit_flow)
 
         if DEBUG:
-            print(x.shape)
+            print(previous_exit_flow.shape)
 
-        return x
+        return previous_exit_flow
 
     def forward(self,input):
         x = self.entry_flow(input)
         x = self.middle_flow(x)
         x = self.exit_flow(x)
+        x = self.fully_connected_flow(x)
         return x
 
 ''' example '''
