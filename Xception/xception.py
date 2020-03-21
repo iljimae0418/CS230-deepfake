@@ -158,27 +158,29 @@ class XceptionModel:
         x = GlobalAveragePooling2D()(x)
         # outputs probability that the video will be FAKE
 
+        return x
+
 
     def fully_connected_res_flow(self, x):
-        tempnodes = x.get_shape().as_list()
-        temp = Dense(tempnodes[1])(x)
+        num_nodes = x.get_shape().as_list()
+        temp = Dense(num_nodes[1])(x)
         temp = Activation(activation="selu")(temp)
         temp = BatchNormalization()(temp)
-        temp2 = Add()([x, temp])
-        return temp2
+        temp = Add()([x,temp])
+        return temp
 
     def fully_connected_flow(self,x,DEBUG=True):
 
-        previous_exit_flow = x
         for _ in range(self.fully_connected_flow_layers):
-            previous_exit_flow = self.fully_connected_flow(previous_exit_flow,DEBUG=True)
+            temp = self.fully_connected_flow(x,DEBUG=True)
+            x = temp
 
-        previous_exit_flow = Dense(1,activation='linear')(previous_exit_flow)
+        x = Dense(1,activation='linear')(x)
 
         if DEBUG:
-            print(previous_exit_flow.shape)
+            print(x)
 
-        return previous_exit_flow
+        return x
 
     def forward(self,input):
         x = self.entry_flow(input)
@@ -197,7 +199,7 @@ parameters = {"firstConv_filters":32,"firstConv_filterSize":3,"firstConv_filterS
                 "exit_residual_blocks":10,"exit_residual_filters1":128,"exit_residual_filterSize1":3,"exit_residual_filterStride1":1,
                 "exit_residual_filters2":1024,"exit_residual_filterSize2":3,"exit_residual_filterStride2":1,
                 "exit_filters1":728,"exit_filterSize1":3,"exit_filterStride1":1,
-                "exit_filters2":1024,"exit_filterSize2":3,"exit_filterStride2":1}
+                "exit_filters2":1024,"exit_filterSize2":3,"exit_filterStride2":1, "fully_connected_flow_layers":5}
 model = XceptionModel(parameters)
 width,height,depth = 244,244,30 # hyperparameter
 inputs = Input(shape=(width,height,depth))
