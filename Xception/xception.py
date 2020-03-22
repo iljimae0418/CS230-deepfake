@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow.keras
+import os
 from tensorflow.keras import models,layers
 from tensorflow.keras.models import Model,model_from_json,Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
@@ -13,6 +14,7 @@ from tensorflow.keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 # all Convlution and Separable Convolution layers are followed by batch normalization
 class XceptionModel:
@@ -60,6 +62,7 @@ class XceptionModel:
     ''' the entry flow similar to that described in the architecture diagram '''
     def entry_flow(self,inputs,DEBUG=True):
         # entry convolutional layers
+        print("input shape   ", inputs.get_shape().as_list())
         x = Conv2D(self.firstConv_filters,self.firstConv_filterSize,
                     strides=self.firstConv_filterStride,padding='same')(inputs)
         x = BatchNormalization()(x)
@@ -72,7 +75,10 @@ class XceptionModel:
 
         previous_block_activation = x
 
+        print(" first conv layer   ", previous_block_activation.get_shape().as_list())
+
         for _ in range(self.entry_residual_blocks):
+            print(" residual block at " , _ , "   " , x.shape)
             x = Activation('relu')(x)
             x = SeparableConv2D(self.entry_residual_filters,self.entry_residual_filterSize,
                                 strides=self.entry_residual_filterStride,padding='same')(x)
@@ -158,27 +164,34 @@ class XceptionModel:
         x = GlobalAveragePooling2D()(x)
         # outputs probability that the video will be FAKE
 
+        if DEBUG:
+            print(x.get_shape().as_list())
+
         return x
 
 
-    def fully_connected_res_flow(self, x):
+    def fully_connected_res_flow(self, x, DEBUG=True):
         num_nodes = x.get_shape().as_list()
         temp = Dense(num_nodes[1])(x)
         temp = Activation(activation="selu")(temp)
         temp = BatchNormalization()(temp)
         temp = Add()([x,temp])
+
+        if DEBUG:
+            print(x.get_shape().as_list())
+
         return temp
 
     def fully_connected_flow(self,x,DEBUG=True):
 
         for _ in range(self.fully_connected_flow_layers):
-            temp = self.fully_connected_flow(x,DEBUG=True)
+            temp = self.fully_connected_res_flow(x,DEBUG=True)
             x = temp
 
-        x = Dense(1,activation='linear')(x)
+        x = Dense(1,activation='sigmoid')(x)
 
         if DEBUG:
-            print(x)
+            print(x.get_shape().as_list())
 
         return x
 
@@ -192,6 +205,11 @@ class XceptionModel:
 ''' example '''
 # X_train,Y_train,X_val,Y_val,X_test,Y_test prepared beforehand
 # check dimensions when using parameters
+
+def normalize(x):
+    return (x - 128.0) / 128
+
+
 parameters = {"firstConv_filters":32,"firstConv_filterSize":3,"firstConv_filterStride":2,
                 "secondConv_filters":64,"secondConv_filterSize":3,"secondConv_filterStride":1,
                 "entry_residual_blocks":10,"entry_residual_filters":128,"entry_residual_filterSize":10,"entry_residual_filterStride":1,
@@ -201,14 +219,26 @@ parameters = {"firstConv_filters":32,"firstConv_filterSize":3,"firstConv_filterS
                 "exit_filters1":728,"exit_filterSize1":3,"exit_filterStride1":1,
                 "exit_filters2":1024,"exit_filterSize2":3,"exit_filterStride2":1, "fully_connected_flow_layers":5}
 model = XceptionModel(parameters)
-width,height,depth = 244,244,30 # hyperparameter
+#width,height,depth = 244,244,30 # hyperparameter
+width,height,depth = 244,244,3 # hyperparameter
 inputs = Input(shape=(width,height,depth))
 outputs = model.forward(inputs)
 xception = Model(inputs,outputs)
 xception.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
-batch_size = 512 # hyperparameter
-epochs = 1000 # hyperparameter
+#batch_size = 512 # hyperparameter
+#epochs = 1000 # hyperparameter
+batch_size = 1
+epochs = 10
+
+
+
+
 ''' the lines below can be used for trainig if train and test data is prepared '''
 # history = xception.fit(X_train,Y_train,epochs=epochs,batch_size=batch_size,validation_data=(X_val,Y_val))
 # predicted = xception.predict(X_test)
+
+history = xception.fit(X_train,Y_train,epochs=epochs,batch_size=batch_size,validation_data=(X_val,Y_val))
+predicted2 = xception.predict(X_train)
+print(predicted2)
+
 
