@@ -97,6 +97,8 @@ for index,row in metadata.iterrows():
         if row['label'] == 'REAL': # if video is real
             for x in sample(range(0,len(frames)),m): # pick m random frames, m <= total number of extracted frames
                 faces = mtcnn(frames[x])
+                if faces is None: 
+                    continue  
                 face = faces[0].permute(1,2,0).int().numpy()
                 # printImage(face)
                 X_dat.append(face)
